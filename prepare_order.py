@@ -103,9 +103,99 @@ f.	Agregar productos: Utilizar la instancia la clase 'Order', del paso c y llama
 """
 #Write your code here
 from users import *
+from util import *
+from products import *
+from orders.order import Order
+import datetime
 
-    
+
+dataframe_cashiers = CSVFileManager("data/cashiers.csv").read()             #Lee todos los archivos csv
+dataframe_customers = CSVFileManager("data/customers.csv").read()
+dataframe_drinks = CSVFileManager("data/drinks.csv").read()
+dataframe_hamburgers = CSVFileManager("data/hamburgers.csv").read()
+dataframe_happyMeal = CSVFileManager("data/happyMeal.csv").read()
+dataframe_sodas = CSVFileManager("data/sodas.csv").read()
+
+
+
+lista_cashiers = CashierConverter().convert(dataframe_cashiers)             # Convierte los dataframes en listas de objetos
+lista_customers = CustomerConverter().convert(dataframe_customers)          # En cada caso los objetos son, clientes,cajeros,etc
+lista_drinks =  ProductConverter().convert(dataframe_drinks)
+lista_hamburgers =  ProductConverter().convert(dataframe_hamburgers)
+lista_happyMeal = ProductConverter().convert(dataframe_happyMeal)
+lista_sodas = ProductConverter().convert(dataframe_sodas)
+lista_productos = lista_drinks + lista_sodas + lista_hamburgers +  lista_happyMeal      # Creo una lista donde estan todos los productos juntos en forma de objetos
+
+
 class PrepareOrder:
- #Write your code here
- pass
+    def dni_cost (self,DNI):                           # Creo la clase principal que prepara la orden con sus funciones
+        cliente = None                                 # Las 2 primeras funciones hacen lo mismo pero con los clientes y cajeros.
+        for i in lista_customers:                      # Sirven para comprobar si los DNI que el usuario da existen en nuestras bases de datos.
+            if i.dni == DNI:
+                cliente = i
+                return cliente
+    def dni_cash (self,DNI):
+        cajero = None
+        for i in lista_cashiers:
+            if i.dni == DNI:
+                cajero = i
+                return cajero
+    def seleccion (self,pedido:object):                     # La función de selección es todo el ciclo que pregunta por los productos
+        ProductConverter().descripcion(lista_productos)     # Hay una consecución de 2 whiles anidados en 1 general.
+        flag = True                 
+        lista_id = []
+        while flag == True:                                                                                      # El while general marca el ciclo principal para repetir todas las acciones
+            flag_2 = False                                                                                       # Esto segun el usuario responda si o no a la pregunta de querer añadir mas productos.
+            while flag_2 == False:                          
+                producto = input("Elija un producto de la lista, escribe el id del producto que desee:")         # Los otros dos while manejan la posibilidad de que las contestaciones a los inputs demandados sean validas.
+                if producto in [str(i.id) for i in lista_productos]:
+                    lista_id.append(producto)
+                    flag_2 = True
+                else:
+                    print("No se encuentra el id en la base de datos, vuelva a escribir un id valido.")
+            flag_3 = False
+            while flag_3 == False:
+                marcador = input("Desea algun otro producto?:")
+                if "si" in marcador.lower():
+                    flag = True
+                    flag_3 = True
+                elif "no" in marcador.lower():
+                    flag = False
+                    flag_3 = True
+                else:
+                    print("Escriba una respuesta que contenga si o no.")
+        for i in lista_id:                                                  # Finalmente añade todos los productos de la lista de productos seleccionada en la instancia del pedido.
+            for u in lista_productos:
+                if i == u.id:
+                    pedido.add(u)
 
+
+CashierConverter().descripcion(lista_cashiers)                          # Aqui muestra la lista de cajeros y pide introducir el dni, y guarda el cajero seleccionado.
+respuesta_valida_cash = False                                           # El bucle while maneja la posibilidad de que el input no coincida con ningun DNI de la base de datos.
+while respuesta_valida_cash == False:
+    DNI_cajero = int(input("Introduzca DNI del cajero:"))
+    if DNI_cajero in [int(i.dni) for i in lista_cashiers]:
+        cajero_seleccionado = PrepareOrder().dni_cash(DNI_cajero)
+        respuesta_valida_cash = True
+    else:
+        print("No se ha encontrado el cajero en la base de datos, vuelva a introducir un DNI valid.")
+
+
+CustomerConverter().descripcion(lista_customers)                        # Aqui es el mismo proceso visto anteriormente con los cajeros pero con clientes.
+respuesta_valida_cust = False
+while respuesta_valida_cust == False:
+    DNI_cliente = int(input("Introduzca el dni del cliente:"))
+    if DNI_cliente in [int(i.dni) for i in lista_customers]:
+        cliente_seleccionado = PrepareOrder().dni_cost(DNI_cliente)
+        respuesta_valida_cust = True
+    else:
+        print("No se ha encontrado el cajero en la base de datos, vuelva a introducir un DNI valid.")
+
+pedido = Order(cajero_seleccionado,cliente_seleccionado)                    # Genera el pedido creando una instacia
+
+PrepareOrder().seleccion(pedido)                                            # Aqui se llama a la función que confecciona todo el pedido
+pedido.show()                                                               # Por ultimo se muestra el pedido.
+
+pedido_en_lista = [[pedido.cashier.dni,pedido.customer.dni,datetime.datetime.now(),pedido.calculateTotal()]]                        # En estas ultimas lineas se hace una lista de listas con las variables de interes
+df_pedido_en_lista = pd.DataFrame(pedido_en_lista, columns=["DNI CAJERO","DNI CLIENTE","FECHA","PRECIO TOTAL DEL PEDIDO"])          # Para posteriormente convertirlo en un dataframe que podremos llevar a un archivo CSV que se creara en data
+escritura_csv(df_pedido_en_lista)

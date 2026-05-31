@@ -1,3 +1,4 @@
+from products import food_package as fp
 from abc import ABC, abstractmethod
 #Write your code here
 
@@ -23,16 +24,31 @@ class Hamburger(Product):
     def type(self) -> str:
         return "Hamburguesa"
     def foodPackage(self) -> FoodPackage:
-        return Wrapping()
+        return fp.Wrapping()
         
 class Soda(Product):
-    #Write your code here
-    pass
+    def __init__(self, id, name, price):
+        super().__init__(id, name, price)
+    def type(self):
+        return "Soda"
+    def foodPackage(self):
+        return fp.Bottle()
+
 
 class Drink(Product):
-    #Write your code here
-    pass
+    def __init__(self, id, name, price):
+        super().__init__(id, name, price)
+    def type(self):
+        return "Drink"
+    def foodPackage(self):
+        return fp.Glass()
+   
 
 class HappyMeal(Product):
-    #Write your code here
-    pass
+    def __init__(self, id, name, price):
+        super().__init__(id, name, price)
+    def type(self):
+        return "Happy Meal"
+    def foodPackage(self):
+        return fp.Box()
+    
